@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WatchAtlas — Your YouTube History, Illuminated</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=Lora:ital,wght@0,400;0,500;1,400&display=swap" />
+  <style>
+    :root {
+      --parchment: #f4ede0;
+      --cream: #faf6ef;
+      --ink: #1c1410;
+      --red: #b8271e;
+      --red-muted: rgba(184, 39, 30, 0.12);
+      --brown: #7a5c3a;
+      --muted: #8c7560;
+      --rule: #d4c4ae;
+      --card: rgba(255, 250, 242, 0.9);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--cream);
+      color: var(--ink);
+      font-family: 'Lora', Georgia, serif;
+    }
+
+    /* Paper texture overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='400'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 2.5rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* NAV */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.6rem 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 900;
+      font-style: italic;
+      letter-spacing: -0.01em;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .logo em { color: var(--red); font-style: normal; }
+
+    .nav-tagline {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .nav-cta {
+      background: var(--red);
+      color: white;
+      font-family: 'Lora', serif;
+      font-size: 0.8rem;
+      letter-spacing: 0.06em;
+      border: none;
+      padding: 0.65rem 1.4rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .nav-cta:hover { background: var(--ink); }
+
+    /* HERO */
+    .hero {
+      padding: 5rem 0 3rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: center;
+    }
+
+    .hero-rule-top {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .rule-line {
+      flex: 1;
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .rule-ornament {
+      font-family: 'Playfair Display', serif;
+      font-size: 1rem;
+      color: var(--red);
+      letter-spacing: 0.3em;
+    }
+
+    .hero-issue {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.2rem;
+    }
+
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(3rem, 5.5vw, 5.5rem);
+      font-weight: 900;
+      line-height: 1.02;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      margin-bottom: 1.5rem;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--red);
+    }
+
+    .hero-lead {
+      font-size: 1.05rem;
+      line-height: 1.85;
+      color: var(--brown);
+      max-width: 46ch;
+      margin-bottom: 2rem;
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-primary {
+      background: var(--red);
+      color: white;
+      font-family: 'Lora', serif;
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+      border: none;
+      padding: 0.9rem 2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary:hover { background: var(--ink); transform: translateY(-1px); }
+
+    .btn-text {
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      cursor: pointer;
+      background: none;
+      border: none;
+      font-family: 'Lora', serif;
+    }
+
+    /* Hero right — stats */
+    .hero-aside {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .hero-aside-rule {
+      height: 1px;
+      background: var(--rule);
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 1.4rem 0;
+      border-bottom: 1px solid var(--rule);
+    }
+
+    .stat-desc {
+      font-size: 0.78rem;
+      color: var(--muted);
+      letter-spacing: 0.04em;
+      max-width: 18ch;
+    }
+
+    .stat-value {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.8rem;
+      font-weight: 900;
+      color: var(--ink);
+      line-height: 1;
+      text-align: right;
+    }
+
+    .stat-value span {
+      font-size: 1.2rem;
+      color: var(--red);
+    }
+
+    .aside-caption {
+      padding-top: 1.2rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-style: italic;
+      text-align: center;
+    }
+
+    /* SECTION DIVIDER */
+    .section-divider {
+      display: flex;
+      align-items: center;
+      gap: 1.2rem;
+      padding: 3rem 0;
+    }
+
+    .div-line { flex: 1; height: 1px; background: var(--rule); }
+    .div-text {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.8rem;
+      font-style: italic;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    /* UPLOAD */
+    .upload-section { padding: 2rem 0 5rem; }
+
+    .upload-header {
+      margin-bottom: 2.5rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      align-items: end;
+    }
+
+    .upload-header h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2.2rem, 4vw, 3.8rem);
+      font-weight: 900;
+      line-height: 1.05;
+      color: var(--ink);
+    }
+
+    .upload-header h2 em {
+      font-style: italic;
+      color: var(--red);
+    }
+
+    .upload-header p {
+      font-size: 0.88rem;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    .upload-zone {
+      background: var(--card);
+      border: 1px solid var(--rule);
+      padding: 4rem 3rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .upload-zone::before,
+    .upload-zone::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 20px;
+      border-color: var(--red);
+      border-style: solid;
+    }
+
+    .upload-zone::before { top: -1px; left: -1px; border-width: 2px 0 0 2px; }
+    .upload-zone::after { bottom: -1px; right: -1px; border-width: 0 2px 2px 0; }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      background: var(--red-muted);
+      border-color: var(--red);
+    }
+
+    .upload-zone input[type=file] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon-wrap {
+      width: 60px;
+      height: 60px;
+      border: 1px solid var(--rule);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      background: var(--cream);
+    }
+
+    .upload-icon-wrap svg {
+      width: 26px;
+      height: 26px;
+      stroke: var(--red);
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+    }
+
+    .upload-headline {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.7rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-sub {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+
+    .upload-hint {
+      margin-top: 1.8rem;
+      display: inline-flex;
+      gap: 0.5rem;
+      align-items: center;
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--rule);
+      padding: 0.35rem 0.9rem;
+    }
+
+    /* HOW-TO */
+    .howto-section { padding: 4rem 0; }
+
+    .howto-section h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      font-weight: 900;
+      line-height: 1.1;
+      margin-bottom: 3rem;
+    }
+
+    .steps-list {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3rem;
+      border-top: 2px solid var(--ink);
+      padding-top: 2rem;
+    }
+
+    .step-item {}
+
+    .step-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 1rem;
+    }
+
+    .step-item h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 0.8rem;
+    }
+
+    .step-item p {
+      font-size: 0.85rem;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    /* FEATURES */
+    .features-section { padding: 4rem 0 5rem; }
+
+    .features-section h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 3.5vw, 3rem);
+      font-weight: 900;
+      margin-bottom: 3rem;
+    }
+
+    .features-section h2 em {
+      font-style: italic;
+      color: var(--red);
+    }
+
+    .features-masonry {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 1.5rem;
+    }
+
+    .feat {
+      background: var(--card);
+      border: 1px solid var(--rule);
+      padding: 2rem;
+    }
+
+    .feat-a { grid-column: span 5; }
+    .feat-b { grid-column: span 7; }
+    .feat-c { grid-column: span 4; }
+    .feat-d { grid-column: span 4; }
+    .feat-e { grid-column: span 4; }
+
+    .feat-tag {
+      font-size: 0.62rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--red);
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .feat h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--ink);
+      margin-bottom: 0.7rem;
+    }
+
+    .feat p {
+      font-size: 0.82rem;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    .feat-big-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 4.5rem;
+      font-weight: 900;
+      color: var(--red);
+      line-height: 1;
+      margin-bottom: 0.5rem;
+      opacity: 0.2;
+    }
+
+    /* PULL QUOTE */
+    .pull-quote {
+      padding: 4rem 0;
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      margin: 2rem 0;
+      text-align: center;
+    }
+
+    .pull-quote blockquote {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.5rem, 3vw, 2.4rem);
+      font-style: italic;
+      line-height: 1.4;
+      color: var(--ink);
+      max-width: 60ch;
+      margin: 0 auto;
+    }
+
+    .pull-quote cite {
+      display: block;
+      margin-top: 1.5rem;
+      font-family: 'Lora', serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      font-style: normal;
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 2px solid var(--ink);
+      padding: 2rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-logo {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.1rem;
+      font-weight: 900;
+      font-style: italic;
+      color: var(--ink);
+    }
+
+    .footer-text {
+      font-size: 0.72rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    .footer-link {
+      font-family: 'Lora', serif;
+      font-size: 0.8rem;
+      color: var(--red);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .hero { grid-template-columns: 1fr; gap: 3rem; }
+      .steps-list { grid-template-columns: 1fr; gap: 2rem; }
+      .upload-header { grid-template-columns: 1fr; }
+      .feat-a, .feat-b, .feat-c, .feat-d, .feat-e { grid-column: span 12; }
+    }
+
+    /* Entrance animation */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-issue, h1, .hero-lead, .hero-actions { animation: fadeIn 0.8s ease both; }
+    h1 { animation-delay: 0.1s; }
+    .hero-lead { animation-delay: 0.2s; }
+    .hero-actions { animation-delay: 0.3s; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <nav>
+      <a href="#" class="logo">Watch<em>Atlas</em></a>
+      <span class="nav-tagline">YouTube History Intelligence</span>
+      <a href="#upload" class="nav-cta">Begin your analysis</a>
+    </nav>
+  </div>
+
+  <!-- HERO -->
+  <div class="container">
+    <section class="hero">
+      <div>
+        <p class="hero-issue">Self Degree &nbsp;·&nbsp; Personal Analytics &nbsp;·&nbsp; Free Tool</p>
+        <h1>Your history<br/>tells a <em>story.</em><br/>Read it.</h1>
+        <p class="hero-lead">
+          Upload your Google Takeout YouTube export and see the full map of your curiosity—
+          which creators you trust, what topics absorb you, and when you watch most.
+          Completely private. Nothing leaves your device.
+        </p>
+        <div class="hero-actions">
+          <a href="#upload" class="btn-primary">Upload your export</a>
+          <button class="btn-text">How to get your export →</button>
+        </div>
+      </div>
+
+      <div class="hero-aside">
+        <div class="hero-aside-rule"></div>
+        <div class="stat-row">
+          <span class="stat-desc">Average videos per person's history</span>
+          <span class="stat-value">12k<span>+</span></span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-desc">Insight dimensions surfaced</span>
+          <span class="stat-value">20<span>+</span></span>
+        </div>
+        <div class="stat-row">
+          <span class="stat-desc">Data privacy — fully client-side</span>
+          <span class="stat-value">100<span>%</span></span>
+        </div>
+        <p class="aside-caption">Your data, your browser, your insights.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- DIVIDER -->
+  <div class="container">
+    <div class="section-divider">
+      <div class="div-line"></div>
+      <span class="div-text">§ — Upload Your Export</span>
+      <div class="div-line"></div>
+    </div>
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="container">
+    <section class="upload-section" id="upload">
+      <div class="upload-header">
+        <h2>Drop your<br/><em>Takeout</em> file<br/>right here.</h2>
+        <p>
+          From Google Takeout, export your YouTube watch history as HTML or JSON.
+          Drag the file onto this field — analysis begins instantly in your browser.
+          We never receive, store, or transmit your data.
+        </p>
+      </div>
+
+      <div class="upload-zone" id="dropZone">
+        <input type="file" accept=".html,.json" id="fileInput" />
+        <div class="upload-icon-wrap">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 16V4m0 0L8 8m4-4l4 4"/>
+            <path d="M4 20h16"/>
+          </svg>
+        </div>
+        <p class="upload-headline">Drag &amp; drop your file here</p>
+        <p class="upload-sub">
+          Supports <strong>watch-history.html</strong> and <strong>watch-history.json</strong> from Google Takeout<br/>
+          Your file is parsed locally — zero server contact
+        </p>
+        <span class="upload-hint">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          100% private — client-side only
+        </span>
+      </div>
+    </section>
+  </div>
+
+  <!-- HOW TO -->
+  <div class="container">
+    <section class="howto-section" id="how">
+      <h2>How to get<br/>your YouTube export</h2>
+
+      <div class="steps-list">
+        <div class="step-item">
+          <p class="step-num">Step I</p>
+          <h3>Visit Google Takeout</h3>
+          <p>Go to <strong>takeout.google.com</strong> and sign in with your Google account. Click "Deselect all" to start fresh, then scroll to find "YouTube and YouTube Music."</p>
+        </div>
+        <div class="step-item">
+          <p class="step-num">Step II</p>
+          <h3>Select history only</h3>
+          <p>Inside the YouTube option, click "All YouTube data included" and deselect everything except "history." This keeps the file small and focused on watch data.</p>
+        </div>
+        <div class="step-item">
+          <p class="step-num">Step III</p>
+          <h3>Upload the file here</h3>
+          <p>Download the export ZIP, unzip it, and locate <strong>watch-history.html</strong> or <strong>watch-history.json</strong> inside. Drag it onto the field above.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- PULL QUOTE -->
+  <div class="container">
+    <div class="pull-quote">
+      <blockquote>
+        "What you watch reveals what you think about. Your history is a mirror."
+      </blockquote>
+      <cite>WatchAtlas — by Self Degree</cite>
+    </div>
+  </div>
+
+  <!-- FEATURES -->
+  <div class="container">
+    <section class="features-section" id="features">
+      <h2>What <em>patterns</em><br/>will you discover?</h2>
+
+      <div class="features-masonry">
+        <div class="feat feat-a">
+          <span class="feat-tag">Temporal Analysis</span>
+          <div class="feat-big-num">24h</div>
+          <h3>When do you watch?</h3>
+          <p>Map every video to the hour, day, and month it was watched. Reveal your true viewing rhythm and the hours your attention is most captured.</p>
+        </div>
+
+        <div class="feat feat-b">
+          <span class="feat-tag">Channel Rankings</span>
+          <h3>Your Most-Trusted Voices</h3>
+          <p>A full ranking of every channel by total watch count. Find the creators who have genuinely earned the most of your attention over the years — the results often surprise.</p>
+        </div>
+
+        <div class="feat feat-c">
+          <span class="feat-tag">Binge Detection</span>
+          <h3>Longest Sessions</h3>
+          <p>Automatically surface your deepest binge sessions — consecutive videos watched in a single sitting.</p>
+        </div>
+
+        <div class="feat feat-d">
+          <span class="feat-tag">Topic Mapping</span>
+          <h3>Content Landscape</h3>
+          <p>See the broad content categories that dominate your feed: education, music, news, gaming, and more.</p>
+        </div>
+
+        <div class="feat feat-e">
+          <span class="feat-tag">Trend Lines</span>
+          <h3>Year-Over-Year</h3>
+          <p>Track how your watching habits have shifted. Which years were you most active? What changed?</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="container">
+    <footer>
+      <span class="footer-logo">WatchAtlas</span>
+      <span class="footer-text">A free tool by Self Degree · self-degree.com</span>
+      <a href="https://self-degree.com/en" class="footer-link" target="_blank">Explore Self Degree →</a>
+    </footer>
+  </div>
+
+  <script>
+    const zone = document.getElementById('dropZone');
+    const input = document.getElementById('fileInput');
+
+    ['dragenter','dragover'].forEach(e => {
+      zone.addEventListener(e, ev => { ev.preventDefault(); zone.classList.add('dragover'); });
+    });
+    ['dragleave','drop'].forEach(e => {
+      zone.addEventListener(e, ev => { ev.preventDefault(); zone.classList.remove('dragover'); });
+    });
+    zone.addEventListener('drop', ev => {
+      const file = ev.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+    input.addEventListener('change', () => {
+      if (input.files[0]) handleFile(input.files[0]);
+    });
+
+    function handleFile(file) {
+      const hl = zone.querySelector('.upload-headline');
+      const sub = zone.querySelector('.upload-sub');
+      hl.textContent = 'File received: ' + file.name;
+      sub.innerHTML = 'Size: <strong>' + (file.size / 1024).toFixed(0) + ' KB</strong> · Parsing and rendering analytics…';
+      zone.style.borderColor = 'var(--red)';
+      zone.style.background = 'var(--red-muted)';
+    }
+  </script>
+</body>
+</html>

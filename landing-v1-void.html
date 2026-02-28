@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ViewTrace — Decode Your YouTube History</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@300;400;500;700&display=swap" />
+  <style>
+    :root {
+      --void: #060608;
+      --deep: #0e0f14;
+      --panel: #12141a;
+      --border: rgba(232, 244, 42, 0.15);
+      --yellow: #e8f42a;
+      --cyan: #00d4ff;
+      --muted: #4a4e5c;
+      --text: #c8ccd8;
+      --white: #f0f2f8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--void);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      overflow-x: hidden;
+    }
+
+    /* Grid noise background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(232, 244, 42, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(232, 244, 42, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Scanline overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* NAV */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem;
+      letter-spacing: 0.12em;
+      color: var(--yellow);
+      text-decoration: none;
+    }
+
+    .logo span { color: var(--cyan); }
+
+    .nav-badge {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      color: var(--muted);
+      border: 1px solid var(--muted);
+      padding: 0.2rem 0.7rem;
+      border-radius: 2px;
+      text-transform: uppercase;
+    }
+
+    .nav-cta {
+      background: var(--yellow);
+      color: var(--void);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border: none;
+      padding: 0.6rem 1.4rem;
+      cursor: pointer;
+      clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+      transition: background 0.2s, transform 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .nav-cta:hover { background: #fff; transform: translateY(-1px); }
+
+    /* HERO */
+    .hero {
+      padding: 6rem 0 5rem;
+      position: relative;
+    }
+
+    .hero-eyebrow {
+      font-size: 0.7rem;
+      letter-spacing: 0.35em;
+      color: var(--cyan);
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      display: inline-block;
+      width: 32px;
+      height: 1px;
+      background: var(--cyan);
+    }
+
+    h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(4rem, 9vw, 9rem);
+      line-height: 0.92;
+      letter-spacing: 0.02em;
+      color: var(--white);
+      margin-bottom: 0.2rem;
+    }
+
+    h1 .accent { color: var(--yellow); }
+    h1 .accent2 { color: var(--cyan); }
+
+    .hero-sub {
+      margin-top: 2.5rem;
+      max-width: 55ch;
+      font-size: 0.9rem;
+      line-height: 1.8;
+      color: var(--text);
+      opacity: 0.8;
+    }
+
+    .hero-actions {
+      margin-top: 2.5rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .btn-primary {
+      background: var(--yellow);
+      color: var(--void);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      border: none;
+      padding: 0.9rem 2rem;
+      cursor: pointer;
+      clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-primary:hover { background: #fff; transform: translateY(-2px); }
+
+    .btn-ghost {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      border: 1px solid var(--border);
+      padding: 0.9rem 2rem;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn-ghost:hover { color: var(--text); border-color: var(--text); }
+
+    /* STATS STRIP */
+    .stats-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      margin: 4rem 0;
+    }
+
+    .stat-cell {
+      background: var(--deep);
+      padding: 1.8rem 1.5rem;
+    }
+
+    .stat-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 3.5rem;
+      color: var(--yellow);
+      line-height: 1;
+      display: block;
+    }
+
+    .stat-unit { color: var(--cyan); }
+
+    .stat-label {
+      font-size: 0.65rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-top: 0.4rem;
+    }
+
+    /* UPLOAD ZONE */
+    .upload-section {
+      padding: 4rem 0;
+    }
+
+    .section-tag {
+      font-size: 0.65rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      margin-bottom: 1rem;
+    }
+
+    .section-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      color: var(--white);
+      line-height: 1;
+      margin-bottom: 3rem;
+    }
+
+    .upload-zone {
+      border: 1px dashed var(--border);
+      background: var(--panel);
+      padding: 4rem 2rem;
+      text-align: center;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.3s;
+      clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 20px 100%, 0 calc(100% - 20px));
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: var(--yellow);
+      background: rgba(232, 244, 42, 0.04);
+    }
+
+    .upload-zone input[type=file] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+    }
+
+    .upload-icon {
+      width: 56px;
+      height: 56px;
+      margin: 0 auto 1.5rem;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+    }
+
+    .upload-icon svg { width: 28px; height: 28px; stroke: var(--yellow); }
+
+    .upload-main-text {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.8rem;
+      color: var(--white);
+      letter-spacing: 0.08em;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-sub-text {
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.1em;
+    }
+
+    .upload-file-types {
+      display: flex;
+      gap: 0.5rem;
+      justify-content: center;
+      margin-top: 1.5rem;
+    }
+
+    .file-badge {
+      font-size: 0.6rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      border: 1px solid var(--border);
+      padding: 0.25rem 0.6rem;
+      color: var(--muted);
+    }
+
+    /* HOW IT WORKS */
+    .how-section {
+      padding: 5rem 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      margin-top: 3rem;
+    }
+
+    .step {
+      background: var(--deep);
+      padding: 2.5rem 2rem;
+      position: relative;
+    }
+
+    .step-number {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 5rem;
+      color: var(--border);
+      line-height: 1;
+      position: absolute;
+      top: 1rem;
+      right: 1.5rem;
+    }
+
+    .step-tag {
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--yellow);
+      margin-bottom: 1rem;
+    }
+
+    .step h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem;
+      letter-spacing: 0.06em;
+      color: var(--white);
+      margin-bottom: 0.8rem;
+    }
+
+    .step p {
+      font-size: 0.78rem;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    /* FEATURES */
+    .features-section {
+      padding: 5rem 0;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1px;
+      background: var(--border);
+      margin-top: 3rem;
+    }
+
+    .feature-card {
+      background: var(--panel);
+      padding: 2.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 2px;
+      height: 100%;
+      background: var(--yellow);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .feature-card:hover::before { opacity: 1; }
+
+    .feature-icon-row {
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .feature-icon {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .feature-icon svg { width: 18px; height: 18px; stroke: var(--yellow); fill: none; }
+
+    .feature-label {
+      font-size: 0.6rem;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      color: var(--cyan);
+    }
+
+    .feature-card h3 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem;
+      letter-spacing: 0.06em;
+      color: var(--white);
+      margin-bottom: 0.8rem;
+    }
+
+    .feature-card p {
+      font-size: 0.8rem;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+
+    /* TERMINAL DEMO */
+    .terminal-demo {
+      background: var(--void);
+      border: 1px solid var(--border);
+      margin-top: 1px;
+      padding: 1.5rem 2.5rem;
+      grid-column: span 2;
+      font-size: 0.75rem;
+      line-height: 2;
+    }
+
+    .terminal-line { display: block; }
+    .t-prompt { color: var(--yellow); }
+    .t-cmd { color: var(--white); }
+    .t-output { color: var(--muted); }
+    .t-success { color: #4afa90; }
+    .t-data { color: var(--cyan); }
+
+    .cursor {
+      display: inline-block;
+      width: 8px;
+      height: 1em;
+      background: var(--yellow);
+      animation: blink 1.2s step-end infinite;
+      vertical-align: middle;
+      margin-left: 2px;
+    }
+
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 2.5rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-brand {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.2rem;
+      letter-spacing: 0.1em;
+      color: var(--yellow);
+    }
+
+    .footer-text {
+      font-size: 0.65rem;
+      color: var(--muted);
+      letter-spacing: 0.12em;
+    }
+
+    /* Glow orb */
+    .glow-orb {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+      filter: blur(80px);
+    }
+
+    .glow-1 {
+      width: 400px;
+      height: 400px;
+      background: rgba(232, 244, 42, 0.06);
+      top: -100px;
+      right: -100px;
+    }
+
+    .glow-2 {
+      width: 300px;
+      height: 300px;
+      background: rgba(0, 212, 255, 0.06);
+      bottom: -50px;
+      left: -50px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .stats-strip { grid-template-columns: repeat(2, 1fr); }
+      .steps-grid { grid-template-columns: 1fr; }
+      .features-grid { grid-template-columns: 1fr; }
+      .terminal-demo { grid-column: span 1; }
+      h1 { font-size: 4rem; }
+    }
+
+    /* Entrance animations */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-eyebrow { animation: fadeUp 0.6s ease both; }
+    h1 { animation: fadeUp 0.7s 0.1s ease both; }
+    .hero-sub { animation: fadeUp 0.7s 0.2s ease both; }
+    .hero-actions { animation: fadeUp 0.7s 0.3s ease both; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <nav>
+      <a href="#" class="logo">View<span>Trace</span></a>
+      <span class="nav-badge">by Self Degree</span>
+      <a href="#upload" class="nav-cta">Try it free</a>
+    </nav>
+  </div>
+
+  <div class="container">
+    <section class="hero">
+      <div class="glow-orb glow-1"></div>
+      <div class="glow-orb glow-2"></div>
+
+      <p class="hero-eyebrow">YouTube History Analytics — Private &amp; Client-Side</p>
+      <h1>
+        Decode<br/>
+        <span class="accent">your</span><br/>
+        <span class="accent2">watch</span><br/>
+        data
+      </h1>
+      <p class="hero-sub">
+        Upload your Google Takeout YouTube export and instantly unlock patterns,
+        obsessions, and insights hiding in your viewing history.
+        Zero server uploads. Everything stays in your browser.
+      </p>
+      <div class="hero-actions">
+        <a href="#upload" class="btn-primary">Upload Your Export</a>
+        <a href="#how" class="btn-ghost">How it works →</a>
+      </div>
+    </section>
+
+    <div class="stats-strip">
+      <div class="stat-cell">
+        <span class="stat-number">100<span class="stat-unit">%</span></span>
+        <p class="stat-label">// Private — runs locally</p>
+      </div>
+      <div class="stat-cell">
+        <span class="stat-number">0</span>
+        <p class="stat-label">// Server uploads needed</p>
+      </div>
+      <div class="stat-cell">
+        <span class="stat-number">20<span class="stat-unit">+</span></span>
+        <p class="stat-label">// Insight dimensions</p>
+      </div>
+      <div class="stat-cell">
+        <span class="stat-number">∞</span>
+        <p class="stat-label">// History depth</p>
+      </div>
+    </div>
+
+    <!-- UPLOAD ZONE -->
+    <section class="upload-section" id="upload">
+      <p class="section-tag">// step_01 — initialize</p>
+      <h2 class="section-title">Drop your<br/>takeout file</h2>
+
+      <div class="upload-zone" id="dropZone">
+        <input type="file" accept=".html,.json" id="fileInput" />
+        <div class="upload-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 16V4m0 0L8 8m4-4l4 4"/>
+            <path d="M4 20h16"/>
+          </svg>
+        </div>
+        <span class="upload-main-text">DRAG &amp; DROP YOUR EXPORT</span>
+        <p class="upload-sub-text">or click to browse — your data never leaves your device</p>
+        <div class="upload-file-types">
+          <span class="file-badge">watch-history.html</span>
+          <span class="file-badge">watch-history.json</span>
+          <span class="file-badge">Google Takeout ZIP</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how-section" id="how">
+      <p class="section-tag">// flow_diagram</p>
+      <h2 class="section-title">Three steps.<br/>Full picture.</h2>
+
+      <div class="steps-grid">
+        <div class="step">
+          <span class="step-number">01</span>
+          <p class="step-tag">// takeout.google.com</p>
+          <h3>Export from Google</h3>
+          <p>Go to Google Takeout, select "YouTube and YouTube Music," then export only watch history. Download the ZIP and find the HTML or JSON file inside.</p>
+        </div>
+        <div class="step">
+          <span class="step-number">02</span>
+          <p class="step-tag">// parse() → analyze()</p>
+          <h3>Upload the file</h3>
+          <p>Drag and drop your <code>watch-history.html</code> or <code>watch-history.json</code> file above. We parse everything client-side — nothing is sent anywhere.</p>
+        </div>
+        <div class="step">
+          <span class="step-number">03</span>
+          <p class="step-tag">// render(insights)</p>
+          <h3>Read your data</h3>
+          <p>Instantly see your most-watched channels, peak viewing hours, longest sessions, content categories, and how your habits have shifted over time.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features-section" id="features">
+      <p class="section-tag">// capabilities[]</p>
+      <h2 class="section-title">What you'll<br/>discover</h2>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon-row">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+            </div>
+            <span class="feature-label">timeline_analysis</span>
+          </div>
+          <h3>Viewing Timeline</h3>
+          <p>See your watch activity mapped by hour, day, month, and year. Find your peak obsession periods and how your watching habits have evolved.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-row">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v4l3 3"/>
+              </svg>
+            </div>
+            <span class="feature-label">channel_ranking</span>
+          </div>
+          <h3>Top Channels</h3>
+          <p>Rank every channel by total watch count. Discover which creators have genuinely captured the most of your attention over the years.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-row">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+              </svg>
+            </div>
+            <span class="feature-label">category_map</span>
+          </div>
+          <h3>Content Categories</h3>
+          <p>Break your history into content categories: music, gaming, news, education, entertainment. See your actual content diet vs. your perceived one.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-row">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round">
+                <path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3"/>
+              </svg>
+            </div>
+            <span class="feature-label">session_detection</span>
+          </div>
+          <h3>Binge Sessions</h3>
+          <p>Automatically detect your longest binge sessions. The algorithm identifies consecutive video chains and ranks your most intense viewing days.</p>
+        </div>
+
+        <!-- Terminal demo -->
+        <div class="terminal-demo">
+          <span class="terminal-line"><span class="t-prompt">→ </span><span class="t-cmd">parsing watch-history.html</span></span>
+          <span class="terminal-line"><span class="t-output">  Found 14,832 watch events spanning 2019–2024</span></span>
+          <span class="terminal-line"><span class="t-output">  Resolving channel metadata...</span></span>
+          <span class="terminal-line"><span class="t-success">  ✓ Analysis complete in 0.34s</span></span>
+          <span class="terminal-line">&nbsp;</span>
+          <span class="terminal-line"><span class="t-prompt">→ </span><span class="t-cmd">top_channels(limit=3)</span></span>
+          <span class="terminal-line"><span class="t-data">  #1  MKBHD           — 847 videos</span></span>
+          <span class="terminal-line"><span class="t-data">  #2  Kurzgesagt      — 412 videos</span></span>
+          <span class="terminal-line"><span class="t-data">  #3  Veritasium      — 389 videos</span></span>
+          <span class="terminal-line">&nbsp;</span>
+          <span class="terminal-line"><span class="t-prompt">→ </span><span class="t-cmd">peak_hour()</span></span>
+          <span class="terminal-line"><span class="t-data">  10pm–11pm  ████████████████████  31.4%</span></span>
+          <span class="terminal-line"><span class="t-prompt">→ </span><span class="cursor"></span></span>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <span class="footer-brand">ViewTrace</span>
+      <span class="footer-text">// by Self Degree — self-degree.com</span>
+      <a href="https://self-degree.com/en" class="btn-ghost" style="font-size:0.65rem;padding:0.5rem 1rem;" target="_blank">Explore Self Degree →</a>
+    </footer>
+  </div>
+
+  <script>
+    const zone = document.getElementById('dropZone');
+    const input = document.getElementById('fileInput');
+
+    ['dragenter','dragover'].forEach(e => {
+      zone.addEventListener(e, ev => { ev.preventDefault(); zone.classList.add('dragover'); });
+    });
+    ['dragleave','drop'].forEach(e => {
+      zone.addEventListener(e, ev => { ev.preventDefault(); zone.classList.remove('dragover'); });
+    });
+    zone.addEventListener('drop', ev => {
+      const file = ev.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+    input.addEventListener('change', () => {
+      if (input.files[0]) handleFile(input.files[0]);
+    });
+
+    function handleFile(file) {
+      const mainText = zone.querySelector('.upload-main-text');
+      const subText = zone.querySelector('.upload-sub-text');
+      mainText.textContent = '✓ FILE RECEIVED: ' + file.name;
+      subText.textContent = 'Parsing ' + (file.size / 1024).toFixed(0) + 'KB — analytics rendering...';
+      zone.style.borderColor = 'var(--yellow)';
+    }
+  </script>
+</body>
+</html>

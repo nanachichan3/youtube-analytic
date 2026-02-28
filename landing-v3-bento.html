@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ViewPulse — Analyze Your YouTube Watch History</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,700;1,9..40,400&display=swap" />
+  <style>
+    :root {
+      --white: #ffffff;
+      --off: #f7f6f4;
+      --ink: #0a0a0a;
+      --red: #ff2d20;
+      --orange: #ff6b2b;
+      --blue: #0066ff;
+      --blue-light: #e8f0ff;
+      --green: #00c46a;
+      --yellow: #ffd700;
+      --muted: #888;
+      --border: #e8e8e8;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--white);
+      color: var(--ink);
+      font-family: 'DM Sans', system-ui, sans-serif;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    /* NAV */
+    nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.4rem 0;
+      border-bottom: 1.5px solid var(--ink);
+    }
+
+    .logo {
+      font-family: 'Anton', sans-serif;
+      font-size: 1.8rem;
+      letter-spacing: 0.04em;
+      color: var(--ink);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .logo-dot {
+      width: 10px;
+      height: 10px;
+      background: var(--red);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.4); opacity: 0.7; }
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--ink); }
+
+    .nav-cta {
+      background: var(--ink);
+      color: white;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      border: none;
+      border-radius: 4px;
+      padding: 0.7rem 1.6rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .nav-cta:hover { background: var(--red); transform: translateY(-1px); }
+
+    /* HERO */
+    .hero {
+      padding: 6rem 0 3rem;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--blue-light);
+      color: var(--blue);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: 100px;
+      padding: 0.35rem 0.9rem;
+      margin-bottom: 2rem;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--blue);
+      border-radius: 50%;
+    }
+
+    h1 {
+      font-family: 'Anton', sans-serif;
+      font-size: clamp(4.5rem, 10vw, 10rem);
+      line-height: 0.9;
+      letter-spacing: 0.02em;
+      color: var(--ink);
+      text-transform: uppercase;
+    }
+
+    .h1-line-2 {
+      display: block;
+      color: var(--red);
+      -webkit-text-stroke: 2px var(--red);
+      color: transparent;
+    }
+
+    .h1-line-3 { display: block; }
+
+    .hero-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: end;
+      margin-top: 3rem;
+    }
+
+    .hero-desc {
+      font-size: 1.05rem;
+      line-height: 1.7;
+      color: #444;
+      max-width: 46ch;
+    }
+
+    .hero-ctas {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      align-items: flex-end;
+    }
+
+    .btn-big {
+      background: linear-gradient(135deg, var(--red), var(--orange));
+      color: white;
+      font-family: 'Anton', sans-serif;
+      font-size: 1.3rem;
+      letter-spacing: 0.06em;
+      border: none;
+      border-radius: 6px;
+      padding: 1.1rem 2.5rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      display: inline-block;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .btn-big:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(255,45,32,0.3); }
+
+    .privacy-note {
+      font-size: 0.72rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .privacy-note svg { width: 12px; height: 12px; stroke: var(--green); fill: none; stroke-width: 2.5; }
+
+    /* BENTO GRID */
+    .bento-section {
+      padding: 4rem 0;
+    }
+
+    .bento-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 1.5rem;
+    }
+
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      grid-template-rows: auto;
+      gap: 1rem;
+    }
+
+    .bento {
+      border-radius: 16px;
+      padding: 1.8rem;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.28s ease, box-shadow 0.28s ease;
+      box-shadow:
+        0 1px 2px rgba(0,0,0,0.04),
+        0 4px 12px rgba(0,0,0,0.06),
+        0 8px 24px rgba(0,0,0,0.03);
+    }
+
+    .bento:hover {
+      transform: translateY(-4px);
+      box-shadow:
+        0 2px 4px rgba(0,0,0,0.06),
+        0 8px 24px rgba(0,0,0,0.10),
+        0 20px 48px rgba(0,0,0,0.07);
+    }
+
+    .b1 { grid-column: span 4; background: var(--ink); color: white; }
+    .b2 { grid-column: span 5; background: linear-gradient(135deg, var(--red), #ff6b2b); color: white; }
+    .b3 { grid-column: span 3; background: var(--blue); color: white; }
+    .b4 { grid-column: span 3; background: var(--off); border: 1.5px solid var(--border); }
+    .b5 { grid-column: span 6; background: var(--green); color: white; }
+    .b6 { grid-column: span 3; background: var(--yellow); }
+
+    .bento-tag {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      opacity: 0.7;
+      margin-bottom: 1rem;
+    }
+
+    .bento-big {
+      font-family: 'Anton', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      line-height: 1;
+      letter-spacing: 0.02em;
+    }
+
+    .bento h3 {
+      font-family: 'Anton', sans-serif;
+      font-size: 1.4rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .bento p {
+      font-size: 0.82rem;
+      line-height: 1.6;
+      opacity: 0.8;
+    }
+
+    /* Mini bar chart */
+    .mini-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 4px;
+      height: 50px;
+      margin-top: 1rem;
+    }
+
+    .mini-bar {
+      flex: 1;
+      border-radius: 3px 3px 0 0;
+      background: rgba(255,255,255,0.25);
+      transition: height 0.3s ease;
+    }
+
+    .b1 .mini-bar { background: rgba(255,255,255,0.2); }
+    .b2 .mini-bar { background: rgba(255,255,255,0.3); }
+
+    /* Sparkline */
+    .sparkline {
+      margin-top: 0.8rem;
+    }
+
+    .sparkline svg { width: 100%; height: 40px; }
+
+    /* Channel list */
+    .channel-rows {
+      margin-top: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .channel-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.75rem;
+    }
+
+    .channel-bar-wrap {
+      flex: 1;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+    }
+
+    .channel-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.8);
+    }
+
+    .channel-name { opacity: 0.9; font-size: 0.72rem; min-width: 80px; }
+    .channel-count { opacity: 0.7; font-size: 0.68rem; }
+
+    /* UPLOAD */
+    .upload-section {
+      padding: 4rem 0;
+      background: var(--off);
+      border-top: 1.5px solid var(--border);
+      border-bottom: 1.5px solid var(--border);
+    }
+
+    .upload-inner {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5rem;
+      align-items: center;
+    }
+
+    .upload-left h2 {
+      font-family: 'Anton', sans-serif;
+      font-size: clamp(2.5rem, 5vw, 4.5rem);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      line-height: 0.95;
+      margin-bottom: 1.5rem;
+    }
+
+    .upload-left h2 span { color: var(--red); }
+
+    .upload-left p {
+      font-size: 0.9rem;
+      line-height: 1.7;
+      color: #555;
+      max-width: 42ch;
+    }
+
+    .upload-zone {
+      background: white;
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      padding: 4rem 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s;
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    }
+
+    .upload-zone:hover,
+    .upload-zone.dragover {
+      border-color: var(--red);
+      background: rgba(255,45,32,0.03);
+      box-shadow: 0 6px 28px rgba(255,45,32,0.08);
+    }
+
+    .upload-zone input[type=file] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      border-radius: 16px;
+    }
+
+    .upload-orb {
+      width: 72px;
+      height: 72px;
+      background: linear-gradient(135deg, var(--red), var(--orange));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      box-shadow: 0 8px 24px rgba(255,45,32,0.3);
+    }
+
+    .upload-orb svg {
+      width: 30px;
+      height: 30px;
+      stroke: white;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+    }
+
+    .upload-title {
+      font-family: 'Anton', sans-serif;
+      font-size: 1.6rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-bottom: 0.5rem;
+    }
+
+    .upload-desc {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+
+    .upload-formats {
+      display: flex;
+      gap: 0.4rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .format-tag {
+      font-size: 0.68rem;
+      font-weight: 600;
+      background: var(--blue-light);
+      color: var(--blue);
+      border-radius: 100px;
+      padding: 0.2rem 0.7rem;
+    }
+
+    /* HOW IT WORKS */
+    .how-section { padding: 5rem 0; }
+
+    .how-section .section-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 3rem;
+      border-bottom: 1.5px solid var(--ink);
+      padding-bottom: 1rem;
+    }
+
+    .section-head h2 {
+      font-family: 'Anton', sans-serif;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    .section-head span {
+      font-size: 0.75rem;
+      color: var(--muted);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .how-card {
+      padding: 2rem;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      position: relative;
+    }
+
+    .how-num {
+      font-family: 'Anton', sans-serif;
+      font-size: 4rem;
+      color: var(--border);
+      line-height: 1;
+      margin-bottom: 1rem;
+    }
+
+    .how-card h3 {
+      font-family: 'Anton', sans-serif;
+      font-size: 1.3rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 0.7rem;
+      color: var(--ink);
+    }
+
+    .how-card p {
+      font-size: 0.83rem;
+      line-height: 1.7;
+      color: #555;
+    }
+
+    .how-card .step-cta {
+      display: inline-block;
+      margin-top: 1rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--blue);
+      text-decoration: none;
+    }
+
+    /* CTA BAND */
+    .cta-band {
+      background: var(--ink);
+      padding: 5rem 0;
+      text-align: center;
+    }
+
+    .cta-band h2 {
+      font-family: 'Anton', sans-serif;
+      font-size: clamp(2.5rem, 6vw, 6rem);
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: white;
+      line-height: 1;
+      margin-bottom: 2rem;
+    }
+
+    .cta-band h2 span { color: var(--red); }
+
+    .cta-band .sub {
+      font-size: 0.95rem;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 2.5rem;
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--ink);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 2rem 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .footer-logo {
+      font-family: 'Anton', sans-serif;
+      font-size: 1.3rem;
+      letter-spacing: 0.06em;
+      color: white;
+    }
+
+    .footer-text {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.4);
+    }
+
+    .footer-link {
+      font-size: 0.8rem;
+      color: rgba(255,255,255,0.6);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .footer-link:hover { color: white; }
+
+    /* Sample link */
+    .sample-link-row {
+      margin-top: 1.2rem;
+      font-size: 0.78rem;
+    }
+
+    .sample-link {
+      color: var(--blue);
+      text-decoration: none;
+      font-weight: 600;
+      transition: color 0.2s;
+    }
+
+    .sample-link:hover { color: var(--ink); }
+
+    /* Animated counter */
+    .bento-big[data-count] {
+      transition: all 0.2s;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      h1 { font-size: 4rem; }
+      .hero-row { grid-template-columns: 1fr; }
+      .hero-ctas { align-items: flex-start; }
+      .b1,.b2,.b3,.b4,.b5,.b6 { grid-column: span 12; }
+      .upload-inner { grid-template-columns: 1fr; gap: 2rem; }
+      .how-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      .nav-links { display: none; }
+      h1 { font-size: 3.2rem; }
+      .hero { padding: 3rem 0 2rem; }
+    }
+
+    /* Entrance animations */
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero-badge { animation: slideUp 0.5s ease both; }
+    h1 { animation: slideUp 0.6s 0.08s ease both; }
+    .hero-row { animation: slideUp 0.7s 0.16s ease both; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <nav>
+      <a href="#" class="logo">
+        ViewPulse
+        <span class="logo-dot"></span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how">How it works</a>
+      </div>
+      <a href="#upload" class="nav-cta">Upload Export →</a>
+    </nav>
+  </div>
+
+  <!-- HERO -->
+  <div class="container">
+    <section class="hero">
+      <div class="hero-badge">
+        <span class="badge-dot"></span>
+        Free · Private · Instant Analysis
+      </div>
+
+      <h1>
+        Your watch
+        <span class="h1-line-2">history,</span>
+        <span class="h1-line-3">decoded.</span>
+      </h1>
+
+      <div class="hero-row">
+        <p class="hero-desc">
+          Upload your Google Takeout YouTube export and discover exactly how
+          you spend your attention — top channels, peak hours, binge sessions,
+          topic breakdowns, and year-over-year shifts. Private and instant.
+        </p>
+        <div class="hero-ctas">
+          <a href="#upload" class="btn-big">Upload Your Export</a>
+          <p class="privacy-note">
+            <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Fully private — nothing sent to any server
+          </p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- BENTO PREVIEW -->
+  <div class="container">
+    <section class="bento-section">
+      <p class="bento-label">Preview — Your dashboard looks like this</p>
+
+      <div class="bento-grid">
+        <!-- Total watch count -->
+        <div class="bento b1">
+          <p class="bento-tag">Total Videos Watched</p>
+          <div class="bento-big">14,832</div>
+          <div class="mini-bars">
+            <div class="mini-bar" style="height:30%"></div>
+            <div class="mini-bar" style="height:45%"></div>
+            <div class="mini-bar" style="height:60%"></div>
+            <div class="mini-bar" style="height:40%"></div>
+            <div class="mini-bar" style="height:75%"></div>
+            <div class="mini-bar" style="height:90%"></div>
+            <div class="mini-bar" style="height:55%"></div>
+            <div class="mini-bar" style="height:70%"></div>
+            <div class="mini-bar" style="height:85%"></div>
+            <div class="mini-bar" style="height:65%"></div>
+            <div class="mini-bar" style="height:100%"></div>
+            <div class="mini-bar" style="height:78%"></div>
+          </div>
+        </div>
+
+        <!-- Top channels -->
+        <div class="bento b2">
+          <p class="bento-tag">Top Channels</p>
+          <div class="channel-rows">
+            <div class="channel-row">
+              <span class="channel-name">MKBHD</span>
+              <div class="channel-bar-wrap"><div class="channel-bar-fill" style="width:100%"></div></div>
+              <span class="channel-count">847</span>
+            </div>
+            <div class="channel-row">
+              <span class="channel-name">Kurzgesagt</span>
+              <div class="channel-bar-wrap"><div class="channel-bar-fill" style="width:49%"></div></div>
+              <span class="channel-count">412</span>
+            </div>
+            <div class="channel-row">
+              <span class="channel-name">Veritasium</span>
+              <div class="channel-bar-wrap"><div class="channel-bar-fill" style="width:46%"></div></div>
+              <span class="channel-count">389</span>
+            </div>
+            <div class="channel-row">
+              <span class="channel-name">Fireship</span>
+              <div class="channel-bar-wrap"><div class="channel-bar-fill" style="width:28%"></div></div>
+              <span class="channel-count">237</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Peak hour -->
+        <div class="bento b3">
+          <p class="bento-tag">Peak Hour</p>
+          <div class="bento-big">10PM</div>
+          <p>Your most active watching hour, every day of the week.</p>
+        </div>
+
+        <!-- Privacy badge -->
+        <div class="bento b4">
+          <p class="bento-tag">Privacy First</p>
+          <h3>Zero Server Uploads</h3>
+          <p>Analysis runs entirely in your browser. Your data never leaves your device.</p>
+        </div>
+
+        <!-- Year heatmap -->
+        <div class="bento b5">
+          <p class="bento-tag">5-Year Activity</p>
+          <h3>How Your Habits Evolved</h3>
+          <div class="sparkline">
+            <svg viewBox="0 0 300 40" preserveAspectRatio="none">
+              <polyline
+                points="0,35 30,30 60,25 90,28 120,15 150,20 180,10 210,18 240,8 270,12 300,5"
+                fill="none"
+                stroke="rgba(255,255,255,0.8)"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <polyline
+                points="0,35 30,30 60,25 90,28 120,15 150,20 180,10 210,18 240,8 270,12 300,5 300,40 0,40"
+                fill="rgba(255,255,255,0.1)"
+              />
+            </svg>
+          </div>
+        </div>
+
+        <!-- Binge record -->
+        <div class="bento b6">
+          <p class="bento-tag">Binge Record</p>
+          <div class="bento-big" style="font-size:3.5rem;">47</div>
+          <h3 style="font-size:1rem;">videos in one day</h3>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- UPLOAD -->
+  <div class="upload-section" id="upload">
+    <div class="container">
+      <div class="upload-inner">
+        <div class="upload-left">
+          <h2>Drop your<br/><span>YouTube</span><br/>export here</h2>
+          <p>
+            Go to Google Takeout → Select YouTube watch history → Download ZIP.
+            Then drag your <strong>watch-history.html</strong> or
+            <strong>watch-history.json</strong> into the box. Instant analysis, zero uploads.
+          </p>
+        </div>
+
+        <div class="upload-zone" id="dropZone">
+          <input type="file" accept=".html,.json" id="fileInput" />
+          <div class="upload-orb">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 16V4m0 0L8 8m4-4l4 4"/>
+              <path d="M4 20h16"/>
+            </svg>
+          </div>
+          <p class="upload-title">Drag &amp; Drop Your File</p>
+          <p class="upload-desc">
+            Drop your <strong>watch-history.html</strong> or <strong>watch-history.json</strong> here,<br/>
+            or click to browse your files.
+          </p>
+          <div class="upload-formats">
+            <span class="format-tag">watch-history.html</span>
+            <span class="format-tag">watch-history.json</span>
+          </div>
+          <p class="sample-link-row">
+            <a href="https://viewpulse.self-degree.com" class="sample-link" target="_blank">
+              or try the live app →
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="container">
+    <section class="how-section" id="how">
+      <div class="section-head">
+        <h2>How it works</h2>
+        <span>Three steps</span>
+      </div>
+
+      <div class="how-grid">
+        <div class="how-card">
+          <div class="how-num">01</div>
+          <h3>Export from Google</h3>
+          <p>Visit takeout.google.com, select "YouTube and YouTube Music," choose history only, and download the ZIP archive.</p>
+          <a href="https://takeout.google.com" class="step-cta" target="_blank">Go to Google Takeout →</a>
+        </div>
+        <div class="how-card">
+          <div class="how-num">02</div>
+          <h3>Upload the file</h3>
+          <p>Find <strong>watch-history.html</strong> or <strong>watch-history.json</strong> in the ZIP. Drag it onto the upload zone above — nothing is sent to any server.</p>
+        </div>
+        <div class="how-card">
+          <div class="how-num">03</div>
+          <h3>Read your insights</h3>
+          <p>Instantly see your top channels, peak hours, longest binges, content categories, and how your habits have changed over the years.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- CTA BAND -->
+  <section class="cta-band" id="features">
+    <div class="container">
+      <h2>Know your<br/><span>attention.</span></h2>
+      <p class="sub">Free forever · 100% private · Works offline · Zero signup</p>
+      <a href="#upload" class="btn-big">Analyze My History →</a>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+      <span class="footer-logo">ViewPulse</span>
+      <span class="footer-text">A free tool by Self Degree</span>
+      <a href="https://self-degree.com/en" class="footer-link" target="_blank">self-degree.com →</a>
+    </div>
+  </footer>
+
+  <script>
+    // ── Upload zone ──
+    const zone = document.getElementById('dropZone');
+    const input = document.getElementById('fileInput');
+
+    ['dragenter','dragover'].forEach(e => {
+      zone.addEventListener(e, ev => { ev.preventDefault(); zone.classList.add('dragover'); });
+    });
+    ['dragleave','drop'].forEach(e => {
+      zone.addEventListener(e, ev => { ev.preventDefault(); zone.classList.remove('dragover'); });
+    });
+    zone.addEventListener('drop', ev => {
+      const file = ev.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+    input.addEventListener('change', () => {
+      if (input.files[0]) handleFile(input.files[0]);
+    });
+
+    function handleFile(file) {
+      const title = zone.querySelector('.upload-title');
+      const desc = zone.querySelector('.upload-desc');
+      title.textContent = '✓ ' + file.name;
+      desc.innerHTML = '<strong>' + (file.size/1024).toFixed(0) + ' KB</strong> — Visit the live app to analyze your history.';
+      zone.style.borderColor = 'var(--red)';
+      zone.style.borderStyle = 'solid';
+    }
+
+    // ── Animated counters on scroll ──
+    function animateCounter(el, target, duration = 1200) {
+      const start = performance.now();
+      const isFloat = String(target).includes('.');
+      function step(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+        const val = eased * target;
+        el.textContent = isFloat
+          ? val.toFixed(1)
+          : Math.floor(val).toLocaleString();
+        if (progress < 1) requestAnimationFrame(step);
+        else el.textContent = isFloat ? target.toFixed(1) : target.toLocaleString();
+      }
+      requestAnimationFrame(step);
+    }
+
+    // Tag countable elements
+    const counters = [
+      { selector: '.b1 .bento-big', target: 14832 },
+      { selector: '.b3 .bento-big', target: null, text: '10PM' },
+      { selector: '.b6 .bento-big', target: 47 },
+    ];
+
+    const counterObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (!entry.isIntersecting) return;
+        const el = entry.target;
+        const raw = el.getAttribute('data-count');
+        if (raw) animateCounter(el, parseFloat(raw));
+        counterObserver.unobserve(el);
+      });
+    }, { threshold: 0.5 });
+
+    // Mark the elements that have numeric values
+    document.querySelector('.b1 .bento-big')?.setAttribute('data-count', '14832');
+    document.querySelector('.b6 .bento-big')?.setAttribute('data-count', '47');
+    document.querySelectorAll('[data-count]').forEach(el => counterObserver.observe(el));
+
+    // ── Bento entrance on scroll ──
+    const bentoObserver = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.bento').forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(16px)';
+      el.style.transition = 'opacity 0.5s ease, transform 0.5s ease, box-shadow 0.28s ease';
+      bentoObserver.observe(el);
+    });
+  </script>
+</body>
+</html>
