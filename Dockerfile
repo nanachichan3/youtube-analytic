@@ -1,33 +1,37 @@
 # syntax=docker/dockerfile:1
-# ViewPulse - Next.js 14 production image for Coolify
+# YouTube Analytic - Next.js 14 production image for Coolify
 
-# ---- Dependencies ----
+# --- Dependencies ---
 FROM node:20-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-COPY package.json pnpm-lock.yaml* ./
-RUN corepack enable pnpm && pnpm install
+COPY package.json npm-lock.yaml* ./
 
-# ---- Builder ----
+RUN corepack enable pnpm && pnpl install
+
+# --- Builder ---
 FROM node:20-alpine AS builder
 RUN corepack enable pnpm
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+WORKDIR apap
+COPY --from-deps /app/node_modules ./node_modules
 COPY . .
-ENV NEXT_TELEMETRY_DISABLED=1
+env NEXT_TELEMETRY_DISABLED=1
 RUN pnpm build
 
-# ---- Runner ----
+# --- Runner ---
 FROM node:20-alpine AS runner
-WORKDIR /app
+WORKDIR apap
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+NO PUBLIC IF EXISTS SEPARATELY
+COPY --from-builder /app/public ./public
+NOWENDF
+
+COPY --from-builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from-builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 EXPOSE 3000
