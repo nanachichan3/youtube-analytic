@@ -1351,6 +1351,148 @@ h1 { animation: fadeUp 0.65s 0.08s ease both; }
   overflow-x: hidden;
 }
 
+/* ── VIDEOS PANEL (timelapse export) ── */
+.videos-panel {
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 1rem;
+  background: #fff;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+.videos-timelapse-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.videos-timelapse-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.videos-timelapse-field select {
+  font: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 500;
+  color: var(--ink);
+  background: #fcfbf9;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 0.45rem 0.55rem;
+  min-width: 8rem;
+}
+
+.videos-timelapse-field--wide {
+  flex: 1 1 220px;
+  max-width: 100%;
+}
+
+.videos-timelapse-field--wide select {
+  min-width: min(100%, 18rem);
+}
+
+.videos-export-btn {
+  align-self: flex-end;
+}
+
+.videos-timelapse-status {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.videos-timelapse-error {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: #b42318;
+  font-weight: 600;
+}
+
+.videos-preview-wrap {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #0f1216;
+  line-height: 0;
+  max-width: 100%;
+}
+
+.videos-timelapse-canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.videos-preview-transport {
+  margin-top: 0.75rem;
+  padding: 0.75rem 0.15rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.videos-preview-transport-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.55rem;
+}
+
+.videos-preview-play {
+  min-width: 4.5rem;
+  font-weight: 600;
+}
+
+.videos-preview-jump {
+  font-size: 0.72rem;
+}
+
+.videos-preview-scrub {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.videos-preview-scrub-label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.videos-preview-scrub input[type='range'] {
+  width: 100%;
+  max-width: 100%;
+  accent-color: var(--ink);
+}
+
+.videos-preview-transport-hint {
+  margin: 0.55rem 0 0;
+  font-size: 0.68rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.videos-timelapse-meta {
+  margin: 0.65rem 0 0;
+  font-size: 0.68rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
 .games-inner-tabs {
   margin-bottom: 0.65rem;
 }

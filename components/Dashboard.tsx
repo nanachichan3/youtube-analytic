@@ -7,6 +7,7 @@ import { buildWatchHistoryContext } from '@/lib/watch-history-context';
 import { DEFAULT_SHARE_HIGHLIGHTS, type ShareStatId } from '@/lib/share-stats-config';
 import { DashboardAiExports, type AiExportPage } from '@/components/DashboardAiExports';
 import { DashboardGames } from '@/components/DashboardGames';
+import { DashboardVideos } from '@/components/DashboardVideos';
 import { mixSeed, randomUint32 } from '@/lib/random-uint32';
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -163,7 +164,7 @@ function ChannelBars({
 }
 
 type Filter = 'all' | 'youtube' | 'youtube-music';
-type MainView = 'analytic' | 'ai-tools' | 'games';
+type MainView = 'analytic' | 'ai-tools' | 'games' | 'videos';
 type DragMode = 'none' | 'start' | 'end' | 'range';
 
 interface DashboardProps {
@@ -438,6 +439,9 @@ export function Dashboard({ events, onReset }: DashboardProps) {
             <button type="button" className={mainView === 'games' ? 'active' : ''} onClick={() => setMainView('games')}>
               Games
             </button>
+            <button type="button" className={mainView === 'videos' ? 'active' : ''} onClick={() => setMainView('videos')}>
+              Videos
+            </button>
           </div>
           <button className="db-reset-btn" onClick={onReset}>← Start over</button>
         </div>
@@ -612,6 +616,10 @@ export function Dashboard({ events, onReset }: DashboardProps) {
           rangeEnd={endDate}
           seedBase={gamesSeedRef.current}
         />
+      )}
+
+      {mainView === 'videos' && (
+        <DashboardVideos sourceEvents={sourceEvents} rangeStart={startDate} rangeEnd={endDate} />
       )}
 
       {mainView === 'analytic' && (
