@@ -596,6 +596,15 @@ export function Dashboard({ events, onReset }: DashboardProps) {
             >
               Image Reports
             </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={exportPanelTab === 'datingCard'}
+              className={`export-panel-tab${exportPanelTab === 'datingCard' ? ' active' : ''}`}
+              onClick={() => setExportPanelTab('datingCard')}
+            >
+              Dating Card
+            </button>
           </div>
 
           <DashboardAiExports
@@ -603,6 +612,8 @@ export function Dashboard({ events, onReset }: DashboardProps) {
             context={openclawContext}
             shareHighlights={shareHighlights}
             onToggleShareHighlight={toggleShareHighlight}
+            rawEvents={sourceEvents}
+            rawAnalytics={a}
           />
         </div>
       )}

@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import { parseExportFile, WatchEvent } from "@/lib/parser";
-import { computeAnalytics } from "@/lib/analytics";
+import { computeAnalytics, AnalyticsResult } from "@/lib/analytics";
 import { DatingCardData } from "@/lib/dating-card";
 import { DatingCardImage } from "./DatingCardImage";
 
@@ -13,60 +13,90 @@ type Phase =
   | { name: "card"; cardData: DatingCardData; imageUrl: string | null }
   | { name: "error"; message: string };
 
-export function DatingCardClient() {
-  const [phase, setPhase] = useState<Phase>({ name: "landing" });
+interface DatingCardClientProps {
+  /** Pre-loaded watch events (when used inside the dashboard). Skips file upload. */
+  preloadedEvents?: WatchEvent[];
+  /** Pre-loaded analytics (when used inside the dashboard). Skips computeAnalytics. */
+  preloadedAnalytics?: AnalyticsResult;
+}
+
+export function DatingCardClient({ preloadedEvents, preloadedAnalytics }: DatingCardClientProps) {
+  const [phase, setPhase] = useState<Phase>(
+    preloadedEvents && preloadedAnalytics
+      ? { name: "generating" }
+      : { name: "landing" }
+  );
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = useCallback(async (file: File) => {
-    setPhase({ name: "loading" });
-    try {
-      const events = await parseExportFile(file);
-      if (events.length === 0) {
-        setPhase({
-          name: "error",
-          message:
-            "No watch history found in this file. Make sure you uploaded watch-history.html or watch-history.json from Google Takeout.",
-        });
-        return;
-      }
-      if (events.length < 10) {
-        setPhase({
-          name: "error",
-          message: `Only ${events.length} videos found — need at least 10 to generate a dating card.`,
-        });
-        return;
-      }
-      if (events.length < 50) {
-        console.warn("[dating-card] Small dataset:", events.length, "videos");
-      }
-
-      const analytics = computeAnalytics(events);
-
-      // Call the API to generate the card
+  const generateCard = useCallback(
+    async (events: WatchEvent[], analytics: AnalyticsResult) => {
       setPhase({ name: "generating" });
+      try {
+        const response = await fetch("/api/dating-card/generate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ events, analytics }),
+        });
 
-      const response = await fetch("/api/dating-card/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ events, analytics }),
-      });
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({ error: "Unknown error" }));
+          throw new Error(err.error ?? `Server error ${response.status}`);
+        }
 
-      if (!response.ok) {
-        const err = await response.json().catch(() => ({ error: "Unknown error" }));
-        throw new Error(err.error ?? `Server error ${response.status}`);
+        const result = await response.json();
+        setPhase({
+          name: "card",
+          cardData: result.cardData,
+          imageUrl: result.imageUrl ?? null,
+        });
+      } catch (err) {
+        setPhase({ name: "error", message: String(err) });
       }
+    },
+    []
+  );
 
-      const result = await response.json();
-      setPhase({
-        name: "card",
-        cardData: result.cardData,
-        imageUrl: result.imageUrl ?? null,
-      });
-    } catch (err) {
-      setPhase({ name: "error", message: String(err) });
-    }
-  }, []);
+  // If preloaded data is provided, kick off generation immediately
+  const hasPreloaded = Boolean(preloadedEvents && preloadedAnalytics);
+  const preloadedRef = useRef(false);
+  if (hasPreloaded && !preloadedRef.current) {
+    preloadedRef.current = true;
+    void generateCard(preloadedEvents!, preloadedAnalytics!);
+  }
+
+  const handleFile = useCallback(
+    async (file: File) => {
+      setPhase({ name: "loading" });
+      try {
+        const events = await parseExportFile(file);
+        if (events.length === 0) {
+          setPhase({
+            name: "error",
+            message:
+              "No watch history found in this file. Make sure you uploaded watch-history.html or watch-history.json from Google Takeout.",
+          });
+          return;
+        }
+        if (events.length < 10) {
+          setPhase({
+            name: "error",
+            message: `Only ${events.length} videos found — need at least 10 to generate a dating card.`,
+          });
+          return;
+        }
+        if (events.length < 50) {
+          console.warn("[dating-card] Small dataset:", events.length, "videos");
+        }
+
+        const analytics = computeAnalytics(events);
+        await generateCard(events, analytics);
+      } catch (err) {
+        setPhase({ name: "error", message: String(err) });
+      }
+    },
+    [generateCard]
+  );
 
   const onDrop = useCallback(
     (e: React.DragEvent) => {
@@ -106,9 +136,7 @@ export function DatingCardClient() {
         <div className="loading-card">
           <div className="loading-spinner" />
           <p className="loading-title">Analyzing your soul…</p>
-          <p className="loading-sub">
-            Generating your AI dating card from watch patterns
-          </p>
+          <p className="loading-sub">Generating your AI dating card from watch patterns</p>
         </div>
       </div>
     );
@@ -127,7 +155,6 @@ export function DatingCardClient() {
         </div>
 
         {phase.imageUrl ? (
-          // AI-generated image card
           <div className="card-image-wrapper">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -137,12 +164,9 @@ export function DatingCardClient() {
             />
           </div>
         ) : (
-          // HTML/CSS fallback card
           <div className="card-html-wrapper">
             <DatingCardImage cardData={phase.cardData} />
-            <p className="card-screenshot-hint">
-              Screenshot this card to share it
-            </p>
+            <p className="card-screenshot-hint">Screenshot this card to share it</p>
           </div>
         )}
 
@@ -182,7 +206,10 @@ export function DatingCardClient() {
           </button>
           <button
             className="btn-outline"
-            onClick={() => setPhase({ name: "landing" })}
+            onClick={() => {
+              preloadedRef.current = false;
+              setPhase({ name: "landing" });
+            }}
           >
             Generate another card
           </button>

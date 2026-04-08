@@ -1,8 +1,11 @@
 'use client';
 
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import type { AnalyticsResult } from '@/lib/analytics';
+import type { WatchEvent } from '@/lib/parser';
 import type { WatchHistoryContextPayload } from '@/lib/watch-history-context';
 import { contextToPromptJson } from '@/lib/watch-history-context';
+import { DatingCardClient } from './DatingCardClient';
 import {
   PARENT_ANALYTIC_SYSTEM_PROMPT,
   buildParentAnalyticUserMessage,
@@ -56,18 +59,24 @@ function randomId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export type AiExportPage = 'openclaw' | 'parents' | 'recs' | 'imageReports';
+export type AiExportPage = 'openclaw' | 'parents' | 'recs' | 'imageReports' | 'datingCard';
 
 export function DashboardAiExports({
   context,
   shareHighlights,
   onToggleShareHighlight,
   page,
+  rawEvents,
+  rawAnalytics,
 }: {
   context: WatchHistoryContextPayload;
   shareHighlights: ShareStatId[];
   onToggleShareHighlight: (id: ShareStatId) => void;
   page: AiExportPage;
+  /** Raw watch events for dating card generation (from dashboard upload). */
+  rawEvents?: WatchEvent[];
+  /** Raw analytics for dating card generation (from dashboard upload). */
+  rawAnalytics?: AnalyticsResult;
 }) {
   const baseId = useId();
   const [provider, setProvider] = useState<Provider>('gemini');
@@ -831,6 +840,25 @@ export function DashboardAiExports({
           <AiMarkdownPreview markdown={channelRecMarkdown} aria-label="Channel recommendations preview" />
         </div>
       </section>
+      ) : page === 'datingCard' ? (
+        <section className="ai-export-section">
+          <h4 className="ai-export-section-title">AI Dating Card</h4>
+          <p className="ai-export-section-desc">
+            Generate a Tinder-style dating card based on your YouTube watch history — revealing your personality,
+            interests, and ideal partner type. Uses your currently loaded watch history from the dashboard.
+            {!rawEvents ? ' Upload a file on the home page first, then come back here.' : ''}
+          </p>
+          {rawEvents && rawAnalytics ? (
+            <DatingCardClient
+              preloadedEvents={rawEvents}
+              preloadedAnalytics={rawAnalytics}
+            />
+          ) : (
+            <p className="ai-export-error">
+              No watch history loaded. Upload your Google Takeout on the home page, then switch to this tab.
+            </p>
+          )}
+        </section>
       ) : (
         <>
       <section className="ai-export-section ai-export-section--reference">

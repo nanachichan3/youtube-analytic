@@ -95,6 +95,15 @@ Large files you may want to navigate by search: `components/Dashboard.tsx` (main
 
 Contributions are welcome: bug reports, docs, and focused PRs. Please keep changes scoped to the problem you are solving. If you add user-facing behavior, mention any privacy implications clearly.
 
+### Dual-presence convention for AI tools
+
+Every AI-powered feature **must** be available in **two places**:
+
+1. **Standalone page** — a full page under `app/use-cases/<tool-name>/page.tsx`, discoverable via the use-cases listing and linked from the homepage. Users can access it directly without loading the dashboard.
+2. **AI Tools tab** — as a sub-tab inside the dashboard's "AI Tools" view (`components/DashboardAiExports.tsx`), reusing the watch history already loaded in the dashboard.
+
+This ensures features are both **discoverable** (standalone pages for SEO and direct links) and **convenient** (reusable within an already-uploaded session). See `components/DatingCardClient.tsx` for an example of a component that supports both modes via optional `preloadedEvents` / `preloadedAnalytics` props.
+
 ## License
 
 This repository does not currently include a `LICENSE` file. Add one (e.g. MIT, Apache-2.0) when you publish or fork so others know the terms.
