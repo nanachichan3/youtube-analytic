@@ -1,0 +1,14 @@
+{
+  "$schema": "https://code.claude.com/docs/en/plugins#plugin-structure-overview",
+  "name": "viewpulse",
+  "version": "1.0.0",
+  "description": "ViewPulse — Privacy-first YouTube watch history analytics",
+  "author": "Yev Rachkovan",
+  "framework": "startup-factory@^1.0.0",
+  "startup_factory": {
+    "stage": "launch",
+    "sprint": 1,
+    "coordinator": "ceo",
+    "experts": ["cto", "cmo"]
+  }
+}
